@@ -1,4 +1,7 @@
 from datetime import datetime
+
+import requests
+
 from constants import IDLE
 import logging
 from utils import clamp
@@ -19,6 +22,8 @@ class AutoScaler(object):
         self.hm = HistoryManager(dd_client=dd_client)
         if cli_args is not None:
             self.enforce_version_match = cli_args.enforce_version_match
+            self.slack_webhook_url = cli_args.slack_webhook_url
+            self.slack_channel = cli_args.slack_channel
 
     def scale(self, app_def, rule_manager):
         """ Take scale action
@@ -43,9 +48,24 @@ class AutoScaler(object):
             return
 
         self.marathon_client.scale_app(app_def.id, scale_to_size)
-        msg = "{app_name}: scaled to {size}"
-        self.logger.info(msg.format(app_name=app_def.app_name,
-                                    size=scale_to_size))
+        msg = "{app_name}: scaled from {last_size} to {size}".format(
+            app_name=app_def.app_name,
+            size=scale_to_size,
+            last_size=app_def.instances)
+        self.logger.info(msg)
+        if self.slack_webhook_url:
+            requests.post(self.slack_webhook_url,
+                          json={
+                              "text": "Performed autoscaling",
+                              "attachments": [
+                                  {
+                                      "fallback": msg,
+                                      "title": app_def.app_name,
+                                      "text": msg
+                                  }
+                              ]
+                          },
+                          headers={'Content-Type': 'application/json'})
 
     def decide(self, app_metrics_summary):
         """

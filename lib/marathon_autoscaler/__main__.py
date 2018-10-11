@@ -78,6 +78,12 @@ def parse_cli_args():
     p.add_argument("--rules-prefix", dest="rules_prefix", action=EnvDefault,
                    envvar="RULES_PREFIX", type=str, default="mas_rule",
                    required=False, help="The prefix for rule names")
+    p.add_argument("--slack-webhook", dest="slack_webhook_url", action=EnvDefault,
+                   envvar="SLACK_WEBHOOK_URL", type=str, default=None,
+                   required=False, help="Slack webhook URL for sending scaling alerts")
+    p.add_argument("--slack-channel", dest="slack_channel", action=EnvDefault,
+                   envvar="SLACK_CHANNEL", type=str, default='#deploy',
+                   required=False, help="Slack channel to scaling alerts")
     return p.parse_args()
 
 
